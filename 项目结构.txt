@@ -1,0 +1,26 @@
+<CONTENT_TO_EDIT>
+markdown_notes/
+├── main.py                 # 主入口文件
+├── requirements.txt        # 依赖包列表
+├── app/
+│   ├── __init__.py
+│   ├── main_window.py      # 主窗口类
+│   ├── editor/
+│   │   ├── __init__.py
+│   │   ├── markdown_editor.py    # Markdown编辑器组件
+│   │   └── markdown_highlighter.py  # Markdown语法高亮
+│   ├── explorer/
+│   │   ├── __init__.py
+│   │   └── file_explorer.py      # 笔记资源管理器
+│   ├── search/
+│   │   ├── __init__.py
+│   │   └── search_engine.py      # 搜索功能
+│   └── utils/
+│       ├── __init__.py
+│       ├── file_operations.py   # 文件操作（导入/导出）
+│       └── settings.py          # 应用设置
+└── resources/
+    ├── icons/              # 图标资源
+    └── styles/             # 样式表
+        └── style.qss       # Qt样式表
+</CONTENT_TO_EDIT>
