@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
         self.setup_connections()
         
     def setup_ui(self):
-        self.setWindowTitle("中文笔记")
+        self.setWindowTitle("老司机中文笔记")
         self.setMinimumSize(1000, 700)
         
         # 主部件
@@ -362,8 +362,8 @@ class MainWindow(QMainWindow):
     def show_about(self):
         QMessageBox.about(
             self, 
-            "关于中文笔记", 
-            "中文笔记应用程序 v1.0\n"
+            "关于老司机笔记", 
+            "老司机笔记应用程序 v1.0\n"
             "一个简单易用的Markdown笔记应用\n"
             "支持笔记管理、Markdown编辑和全文搜索"
         )
