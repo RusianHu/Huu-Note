@@ -88,6 +88,11 @@ class FileExplorer(QWidget):
         
         menu = QMenu()
         
+        # 导入笔记选项
+        import_action = QAction("导入笔记", self)
+        import_action.triggered.connect(lambda: self.import_note(path if not is_file else os.path.dirname(path)))
+        menu.addAction(import_action)
+        
         # 添加通用动作
         open_action = QAction("打开", self)
         open_action.triggered.connect(lambda: self.on_item_double_clicked(index))
@@ -225,3 +230,52 @@ class FileExplorer(QWidget):
     def refresh(self):
         self.model.setRootPath(self.root_path)
         self.tree_view.setRootIndex(self.model.index(self.root_path))
+        
+    def import_note(self, target_dir):
+        """导入笔记文件到指定目录"""
+        from PyQt5.QtWidgets import QFileDialog
+        
+        # 设置文件过滤器，支持多种文本格式
+        file_filter = "文本文件 (*.md *.txt);;所有文件 (*)"
+        file_paths, _ = QFileDialog.getOpenFileNames(
+            self, "选择要导入的笔记", "", file_filter)
+            
+        if not file_paths:
+            return
+            
+        for src_path in file_paths:
+            # 验证文件格式
+            if not src_path.lower().endswith(('.md', '.txt')):
+                QMessageBox.warning(self, "格式不支持", 
+                                  f"不支持导入 {os.path.basename(src_path)}: 仅支持.md和.txt文件")
+                continue
+                
+            # 构建目标路径
+            filename = os.path.basename(src_path)
+            if filename.lower().endswith('.txt'):
+                # 如果是.txt文件，转换为.md
+                dst_path = os.path.join(target_dir, filename[:-4] + '.md')
+                try:
+                    # 读取.txt内容并写入.md文件
+                    with open(src_path, 'r', encoding='utf-8') as src_file:
+                        content = src_file.read()
+                    with open(dst_path, 'w', encoding='utf-8') as dst_file:
+                        dst_file.write(content)
+                    QMessageBox.information(self, "导入成功", 
+                                          f"已成功将 {filename} 转换为.md格式")
+                except Exception as e:
+                    QMessageBox.warning(self, "导入失败", 
+                                      f"转换 {filename} 失败: {str(e)}")
+            else:
+                # 其他文件直接复制
+                dst_path = os.path.join(target_dir, filename)
+                from app.utils.file_operations import copy_file
+                if copy_file(src_path, dst_path):
+                    QMessageBox.information(self, "导入成功", 
+                                          f"已成功导入 {filename}")
+                else:
+                    QMessageBox.warning(self, "导入失败", 
+                                      f"导入 {filename} 失败")
+        
+        # 刷新文件列表
+        self.refresh()

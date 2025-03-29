@@ -1,26 +1,31 @@
-<CONTENT_TO_EDIT>
-markdown_notes/
-├── main.py                 # 主入口文件
-├── requirements.txt        # 依赖包列表
-├── app/
-│   ├── __init__.py
-│   ├── main_window.py      # 主窗口类
-│   ├── editor/
-│   │   ├── __init__.py
-│   │   ├── markdown_editor.py    # Markdown编辑器组件
-│   │   └── markdown_highlighter.py  # Markdown语法高亮
-│   ├── explorer/
-│   │   ├── __init__.py
-│   │   └── file_explorer.py      # 笔记资源管理器
-│   ├── search/
-│   │   ├── __init__.py
-│   │   └── search_engine.py      # 搜索功能
-│   └── utils/
-│       ├── __init__.py
-│       ├── file_operations.py   # 文件操作（导入/导出）
-│       └── settings.py          # 应用设置
-└── resources/
-    ├── icons/              # 图标资源
-    └── styles/             # 样式表
-        └── style.qss       # Qt样式表
-</CONTENT_TO_EDIT>
+HuuNote/  # 主项目目录
+├── .gitattributes          # Git版本控制属性配置
+├── 标准构筑程序.py         # 标准构建脚本
+├── 环境依赖检测.py         # 环境依赖检查工具
+├── 一键构筑程序(单文件).py # 单文件构建脚本
+├── 项目结构.txt            # 本项目结构说明文档
+├── huu_note.spec           # PyInstaller打包配置文件
+├── HuuNote.exe             # 打包后的可执行文件
+├── HuuNote.spec            # PyInstaller打包配置文件(备用)
+├── main.py                 # 应用程序主入口文件
+├── requirements.txt        # Python依赖包列表
+├── app/                    # 应用程序核心代码目录
+│   ├── __init__.py         # Python包初始化文件
+│   ├── main_window.py      # 主窗口界面实现
+│   ├── editor/             # 编辑器相关模块
+│   │   ├── __init__.py     # 编辑器包初始化
+│   │   ├── markdown_editor.py    # Markdown编辑器核心实现
+│   │   └── markdown_highlighter.py  # Markdown语法高亮逻辑
+│   ├── explorer/           # 文件浏览器模块
+│   │   ├── __init__.py     # 文件浏览器包初始化
+│   │   └── file_explorer.py      # 文件浏览功能实现
+│   ├── search/             # 搜索功能模块
+│   │   ├── __init__.py     # 搜索包初始化
+│   │   └── search_engine.py      # 全文搜索功能实现
+│   └── utils/              # 工具类模块
+│       ├── __init__.py     # 工具包初始化
+│       ├── file_operations.py   # 文件操作工具类(导入/导出等)
+│       └── settings.py          # 应用程序配置管理
+└── resources/              # 资源文件目录
+    └── styles/             # 样式表目录
+        └── style.qss       # Qt样式表文件(界面美化)
