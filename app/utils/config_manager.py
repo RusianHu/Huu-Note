@@ -39,7 +39,7 @@ class ConfigManager:
                 "theme": "default",
                 "auto_save": True,
                 "auto_save_interval": 60,  # 秒
-                "editor_layout": "vertical"  # 默认上下布局
+                "editor_layout": "horizontal"  # 默认左右布局
             },
             # 同步配置部分
             "sync_settings": {
