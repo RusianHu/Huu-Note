@@ -50,11 +50,27 @@ class HuuNoteServer {
     public function handleRequest() {
         // 获取请求方法和路径
         $method = $_SERVER['REQUEST_METHOD'];
-        $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         
-        // 提取API路径
-        $path = parse_url($requestUri, PHP_URL_PATH);
-        $pathParts = explode('/', trim($path, '/'));
+        // 检查是否是测试连接请求
+        if (isset($_GET['test_connection'])) {
+            // 直接验证API密钥
+            if ($this->authenticateRequest()) {
+                $this->sendResponse(['success' => true, 'message' => '连接成功']);
+            } else {
+                $this->sendResponse(['error' => '未授权访问'], 401);
+            }
+            return;
+        }
+        
+        // 使用URL参数获取API路径
+        if (isset($_GET['api_path'])) {
+            $pathParts = explode('/', trim($_GET['api_path'], '/'));
+        } else {
+            // 原有解析方式作为备选
+            $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+            $path = parse_url($requestUri, PHP_URL_PATH);
+            $pathParts = explode('/', trim($path, '/'));
+        }
         
         // 检查是否是API请求
         if (count($pathParts) < 2 || $pathParts[0] != 'api') {
