@@ -24,6 +24,19 @@ def load_file(file_path):
         print(f"加载文件错误: {str(e)}")
         return None
         
+def copy_file(src_path, dst_path):
+    """复制文件从源路径到目标路径"""
+    try:
+        # 确保目标目录存在
+        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+        
+        # 执行文件复制
+        shutil.copy2(src_path, dst_path)
+        return True
+    except Exception as e:
+        print(f"复制文件错误: {str(e)}")
+        return False
+        
 def open_in_system_explorer(self, path):
     """在系统资源管理器中打开指定路径"""
     try:
