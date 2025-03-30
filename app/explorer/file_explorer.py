@@ -131,9 +131,11 @@ class FileExplorer(QWidget):
         try:
             # 针对不同操作系统使用不同的方法
             if os.name == 'nt':  # Windows系统
-                # 对于文件，选中文件本身而不是打开它
+                # 规范化路径
+                path = os.path.normpath(path)
                 if os.path.isfile(path):
-                    subprocess.Popen(f'explorer /select,"{path}"')
+                    # 使用subprocess.call确保命令执行
+                    subprocess.call(f'explorer /select,"{path}"', shell=True)
                 else:
                     os.startfile(path)
             elif os.name == 'posix':  # macOS 或 Linux
