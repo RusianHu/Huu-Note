@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QColor, QTextCursor
 import markdown
 from .markdown_highlighter import MarkdownHighlighter
+from .context_menu import ChineseContextMenu
 
 class MarkdownEditor(QWidget):
     def __init__(self):
@@ -34,10 +35,16 @@ class MarkdownEditor(QWidget):
         self.editor.setTabStopWidth(40)
         self.editor.setLineWrapMode(QTextEdit.WidgetWidth)
         self.editor.textChanged.connect(self.on_text_changed)
+        # 设置编辑器的自定义右键菜单
+        self.editor.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.editor.customContextMenuRequested.connect(self.show_editor_context_menu)
         
         # 创建预览区
         self.preview = QTextEdit()
         self.preview.setReadOnly(True)
+        # 设置预览区的自定义右键菜单
+        self.preview.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.preview.customContextMenuRequested.connect(self.show_preview_context_menu)
         
         # 连接滚动条信号
         self.editor.verticalScrollBar().valueChanged.connect(self.sync_preview_scroll)
@@ -152,6 +159,17 @@ class MarkdownEditor(QWidget):
     def document(self):
         return self.editor.document()
     
+    # 添加显示自定义右键菜单的方法
+    def show_editor_context_menu(self, position):
+        """显示编辑器的中文右键菜单"""
+        menu = ChineseContextMenu.create_editor_menu(self.editor)
+        menu.exec_(self.editor.mapToGlobal(position))
+        
+    def show_preview_context_menu(self, position):
+        """显示预览窗口的中文右键菜单"""
+        menu = ChineseContextMenu.create_preview_menu(self.preview)
+        menu.exec_(self.preview.mapToGlobal(position))
+    
     def sync_preview_scroll(self, value):
         # 防止循环触发
         if self.preview_scrolling:
@@ -232,9 +250,15 @@ class MarkdownEditor(QWidget):
         self.editor.setLineWrapMode(QTextEdit.WidgetWidth)
         self.editor.textChanged.connect(self.on_text_changed)
         self.editor.setPlainText(content)
+        # 设置编辑器的自定义右键菜单
+        self.editor.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.editor.customContextMenuRequested.connect(self.show_editor_context_menu)
         
         self.preview = QTextEdit()
         self.preview.setReadOnly(True)
+        # 设置预览区的自定义右键菜单
+        self.preview.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.preview.customContextMenuRequested.connect(self.show_preview_context_menu)
         
         # 重新连接滚动条信号
         self.editor.verticalScrollBar().valueChanged.connect(self.sync_preview_scroll)
