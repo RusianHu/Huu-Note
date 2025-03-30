@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QTextEdit, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QTextEdit, QLabel, QScrollBar
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QColor, QTextCursor
 import markdown
@@ -10,7 +10,12 @@ class MarkdownEditor(QWidget):
         self.setup_ui()
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_preview)
-        self.timer.start(1000)  # 每1秒更新一次预览
+        self.timer.setSingleShot(True)  # 设置为单次触发模式
+        # 不再自动启动定时器，只在文本变化时触发
+        
+        # 用于控制滚动同步的标志
+        self.editor_scrolling = False
+        self.preview_scrolling = False
         
     def setup_ui(self):
         # 创建主布局
@@ -31,6 +36,10 @@ class MarkdownEditor(QWidget):
         self.preview = QTextEdit()
         self.preview.setReadOnly(True)
         
+        # 连接滚动条信号
+        self.editor.verticalScrollBar().valueChanged.connect(self.sync_preview_scroll)
+        self.preview.verticalScrollBar().valueChanged.connect(self.sync_editor_scroll)
+        
         # 应用Markdown语法高亮
         self.highlighter = MarkdownHighlighter(self.editor.document())
         
@@ -46,9 +55,16 @@ class MarkdownEditor(QWidget):
     
     def on_text_changed(self):
         # 当文本发生变化时，将在1秒后更新预览（防止频繁更新）
+        # 只有在文本变化时才触发预览更新
         self.timer.start(1000)
     
     def update_preview(self):
+        # 获取编辑器当前滚动比例，用于更新后同步预览窗口位置
+        editor_scrollbar = self.editor.verticalScrollBar()
+        editor_ratio = 0
+        if editor_scrollbar.maximum() > 0:
+            editor_ratio = editor_scrollbar.value() / editor_scrollbar.maximum()
+        
         content = self.editor.toPlainText()
         html = markdown.markdown(
             content, 
@@ -76,7 +92,18 @@ class MarkdownEditor(QWidget):
         </body>
         </html>
         """
+        
+        # 设置标志防止触发滚动同步
+        self.preview_scrolling = True
         self.preview.setHtml(html)
+        
+        # 根据编辑器的滚动比例设置预览窗口的滚动位置
+        preview_scrollbar = self.preview.verticalScrollBar()
+        if preview_scrollbar.maximum() > 0:
+            preview_scrollbar.setValue(int(editor_ratio * preview_scrollbar.maximum()))
+        
+        # 重置标志
+        self.preview_scrolling = False
     
     def insert_markdown_syntax(self, prefix, suffix):
         cursor = self.editor.textCursor()
@@ -121,3 +148,51 @@ class MarkdownEditor(QWidget):
     # 添加新方法，返回内部编辑器的document对象
     def document(self):
         return self.editor.document()
+    
+    def sync_preview_scroll(self, value):
+        # 防止循环触发
+        if self.preview_scrolling:
+            return
+            
+        self.editor_scrolling = True
+        
+        # 计算滚动比例
+        editor_scrollbar = self.editor.verticalScrollBar()
+        preview_scrollbar = self.preview.verticalScrollBar()
+        
+        # 如果编辑器滚动条最大值为0，则不进行同步
+        if editor_scrollbar.maximum() == 0:
+            self.editor_scrolling = False
+            return
+            
+        # 计算相对位置比例
+        ratio = value / editor_scrollbar.maximum()
+        
+        # 设置预览窗口的滚动位置
+        preview_scrollbar.setValue(int(ratio * preview_scrollbar.maximum()))
+        
+        self.editor_scrolling = False
+    
+    def sync_editor_scroll(self, value):
+        # 防止循环触发
+        if self.editor_scrolling:
+            return
+            
+        self.preview_scrolling = True
+        
+        # 计算滚动比例
+        editor_scrollbar = self.editor.verticalScrollBar()
+        preview_scrollbar = self.preview.verticalScrollBar()
+        
+        # 如果预览窗口滚动条最大值为0，则不进行同步
+        if preview_scrollbar.maximum() == 0:
+            self.preview_scrolling = False
+            return
+            
+        # 计算相对位置比例
+        ratio = value / preview_scrollbar.maximum()
+        
+        # 设置编辑器窗口的滚动位置
+        editor_scrollbar.setValue(int(ratio * editor_scrollbar.maximum()))
+        
+        self.preview_scrolling = False
