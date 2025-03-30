@@ -112,6 +112,9 @@ class MainWindow(QMainWindow):
         self.setup_toolbar()
         self.setup_connections()
         
+        # 加载编辑器布局设置
+        self.load_editor_layout_setting()
+        
     def setup_ui(self):
         self.setWindowTitle("老司机中文笔记")
         self.setMinimumSize(1000, 700)
@@ -235,6 +238,14 @@ class MainWindow(QMainWindow):
         explorer_action.setText("显示笔记资源管理器(&E)")
         view_menu.addAction(explorer_action)
         
+        view_menu.addSeparator()
+        
+        # 添加布局切换菜单项
+        toggle_layout_action = QAction("切换编辑器布局(&L)", self)
+        toggle_layout_action.setShortcut("Ctrl+L")
+        toggle_layout_action.triggered.connect(self.toggle_editor_layout)
+        view_menu.addAction(toggle_layout_action)
+        
         # 同步菜单 - 新增
         sync_menu = self.menuBar().addMenu("同步(&S)")
         
@@ -282,6 +293,12 @@ class MainWindow(QMainWindow):
         toolbar.addAction(save_action)
         
         toolbar.addSeparator()
+        
+        # 添加布局切换按钮
+        self.toggle_layout_action = QAction("切换布局", self)
+        self.toggle_layout_action.setToolTip("切换编辑器和预览窗口的布局方向")
+        self.toggle_layout_action.triggered.connect(self.toggle_editor_layout)
+        toolbar.addAction(self.toggle_layout_action)
         
         # 接上文
         cut_action = QAction("剪切", self)
@@ -683,3 +700,25 @@ class MainWindow(QMainWindow):
     def on_sync_progress(self, message):
         """同步进度更新"""
         self.statusBar().showMessage(message)
+        
+    def toggle_editor_layout(self):
+        """切换编辑器和预览窗口的布局方向"""
+        # 调用编辑器的布局切换方法
+        self.editor.toggle_layout()
+        
+        # 更新布局设置
+        current_layout = self.editor.get_layout_orientation()
+        layout_name = "horizontal" if current_layout == Qt.Horizontal else "vertical"
+        self.settings.set("editor_layout", layout_name)
+        
+        # 更新状态栏消息
+        layout_text = "左右布局" if current_layout == Qt.Horizontal else "上下布局"
+        self.statusBar().showMessage(f"已切换到{layout_text}", 3000)
+    
+    def load_editor_layout_setting(self):
+        """加载编辑器布局设置"""
+        layout_setting = self.settings.get("editor_layout", "vertical")
+        
+        # 如果保存的设置是水平布局，则切换到水平布局
+        if layout_setting == "horizontal" and self.editor.get_layout_orientation() == Qt.Vertical:
+            self.editor.toggle_layout()

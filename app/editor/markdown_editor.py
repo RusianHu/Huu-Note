@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QTextEdit, QLabel, QScrollBar
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QTextEdit, QLabel, QScrollBar
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QColor, QTextCursor
 import markdown
@@ -19,11 +19,14 @@ class MarkdownEditor(QWidget):
         
     def setup_ui(self):
         # 创建主布局
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        
+        # 默认使用垂直布局（上下分布）
+        self.current_layout = Qt.Vertical
         
         # 创建分隔器
-        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter = QSplitter(self.current_layout)
         
         # 创建编辑器
         self.editor = QTextEdit()
@@ -49,9 +52,9 @@ class MarkdownEditor(QWidget):
         self.splitter.setSizes([500, 500])  # 初始大小
         
         # 将分隔器添加到布局
-        layout.addWidget(self.splitter)
+        self.layout.addWidget(self.splitter)
         
-        self.setLayout(layout)
+        self.setLayout(self.layout)
     
     def on_text_changed(self):
         # 当文本发生变化时，将在1秒后更新预览（防止频繁更新）
@@ -196,3 +199,71 @@ class MarkdownEditor(QWidget):
         editor_scrollbar.setValue(int(ratio * editor_scrollbar.maximum()))
         
         self.preview_scrolling = False
+        
+    def toggle_layout(self):
+        """切换编辑器和预览窗口的布局方向"""
+        # 保存当前分隔器的大小比例
+        sizes = self.splitter.sizes()
+        total_size = sum(sizes)
+        ratio = [size / total_size for size in sizes]
+        
+        # 切换布局方向
+        if self.current_layout == Qt.Vertical:
+            self.current_layout = Qt.Horizontal
+        else:
+            self.current_layout = Qt.Vertical
+        
+        # 记录当前内容和滚动位置
+        content = self.editor.toPlainText()
+        editor_scroll_value = self.editor.verticalScrollBar().value()
+        preview_scroll_value = self.preview.verticalScrollBar().value()
+        
+        # 移除旧的分隔器
+        old_splitter = self.splitter
+        self.layout.removeWidget(old_splitter)
+        
+        # 创建新的分隔器
+        self.splitter = QSplitter(self.current_layout)
+        
+        # 重新创建编辑器和预览区
+        self.editor = QTextEdit()
+        self.editor.setFont(QFont("Microsoft YaHei", 11))
+        self.editor.setTabStopWidth(40)
+        self.editor.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.editor.textChanged.connect(self.on_text_changed)
+        self.editor.setPlainText(content)
+        
+        self.preview = QTextEdit()
+        self.preview.setReadOnly(True)
+        
+        # 重新连接滚动条信号
+        self.editor.verticalScrollBar().valueChanged.connect(self.sync_preview_scroll)
+        self.preview.verticalScrollBar().valueChanged.connect(self.sync_editor_scroll)
+        
+        # 重新应用Markdown语法高亮
+        self.highlighter = MarkdownHighlighter(self.editor.document())
+        
+        # 将组件添加到分隔器
+        self.splitter.addWidget(self.editor)
+        self.splitter.addWidget(self.preview)
+        
+        # 将分隔器添加到布局
+        self.layout.addWidget(self.splitter)
+        
+        # 恢复分隔器的大小比例
+        new_sizes = [int(r * total_size) for r in ratio]
+        self.splitter.setSizes(new_sizes)
+        
+        # 立即更新预览
+        self.update_preview()
+        
+        # 恢复滚动位置
+        QTimer.singleShot(100, lambda: self.editor.verticalScrollBar().setValue(editor_scroll_value))
+        QTimer.singleShot(100, lambda: self.preview.verticalScrollBar().setValue(preview_scroll_value))
+        
+        # 销毁旧的分隔器
+        old_splitter.deleteLater()
+        
+    def get_layout_orientation(self):
+        """获取当前布局方向"""
+        return self.current_layout

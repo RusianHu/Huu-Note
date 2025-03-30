@@ -14,7 +14,8 @@ class Settings:
             "font_size": 11,
             "theme": "default",
             "auto_save": True,
-            "auto_save_interval": 60  # 秒
+            "auto_save_interval": 60,  # 秒
+            "editor_layout": "vertical"  # 默认上下布局
         }
         
         if os.path.exists(self.settings_file):
