@@ -36,6 +36,20 @@ class FileExplorer(QWidget):
         # 添加按钮布局到主布局
         layout.addLayout(btn_layout)
         
+        # 创建第二行按钮布局 - 新增
+        expand_layout = QHBoxLayout()
+        
+        # 添加展开所有目录按钮 - 新增
+        self.expand_all_btn = QPushButton("展开所有")
+        expand_layout.addWidget(self.expand_all_btn)
+        
+        # 添加折叠所有目录按钮 - 新增
+        self.collapse_all_btn = QPushButton("折叠所有")
+        expand_layout.addWidget(self.collapse_all_btn)
+        
+        # 添加第二行按钮布局到主布局 - 新增
+        layout.addLayout(expand_layout)
+        
         # 创建文件系统模型
         self.model = QFileSystemModel()
         self.model.setRootPath(self.root_path)
@@ -67,10 +81,26 @@ class FileExplorer(QWidget):
         # 连接右键菜单事件
         self.tree_view.customContextMenuRequested.connect(self.show_context_menu)
         
-        # 连接按钮事件 - 修改这两行
+        # 连接按钮事件
         self.new_folder_btn.clicked.connect(lambda: self.create_folder())
         self.new_file_btn.clicked.connect(lambda: self.create_file())
         self.refresh_btn.clicked.connect(self.refresh)
+        
+        # 连接展开和折叠按钮事件 - 新增
+        self.expand_all_btn.clicked.connect(self.expand_all_directories)
+        self.collapse_all_btn.clicked.connect(self.collapse_all_directories)
+    
+    # 新增方法：展开所有目录
+    def expand_all_directories(self):
+        """展开所有目录"""
+        self.tree_view.expandAll()
+        self.statusBar().showMessage("已展开所有目录", 3000)
+    
+    # 新增方法：折叠所有目录
+    def collapse_all_directories(self):
+        """折叠所有目录"""
+        self.tree_view.collapseAll()
+        self.statusBar().showMessage("已折叠所有目录", 3000)
     
     def on_item_double_clicked(self, index):
         path = self.model.filePath(index)
@@ -122,6 +152,15 @@ class FileExplorer(QWidget):
             create_file_action.triggered.connect(
                 lambda: self.create_file(parent_path=path))
             menu.addAction(create_file_action)
+            
+            # 添加展开/折叠选项 - 新增
+            expand_action = QAction("展开", self)
+            expand_action.triggered.connect(lambda: self.tree_view.expand(index))
+            menu.addAction(expand_action)
+            
+            collapse_action = QAction("折叠", self)
+            collapse_action.triggered.connect(lambda: self.tree_view.collapse(index))
+            menu.addAction(collapse_action)
         
         menu.exec_(self.tree_view.viewport().mapToGlobal(position))
 
@@ -281,3 +320,20 @@ class FileExplorer(QWidget):
         
         # 刷新文件列表
         self.refresh()
+        
+    # 获取状态栏方法 - 新增
+    def statusBar(self):
+        """获取主窗口的状态栏"""
+        # 查找父窗口中的状态栏
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'statusBar') and callable(parent.statusBar):
+                return parent.statusBar()
+            parent = parent.parent()
+        
+        # 如果找不到状态栏，则返回一个模拟对象
+        class DummyStatusBar:
+            def showMessage(self, message, timeout=0):
+                pass
+        
+        return DummyStatusBar()
