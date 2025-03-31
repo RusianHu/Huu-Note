@@ -1,9 +1,13 @@
-# 老司机笔记 - 轻量级Markdown笔记
+# 老司机笔记 - 轻量级Markdown笔记 支持搭建同步服务器
 
- - 做着玩的，交流学习
+ - 抛弃到处都是的臃肿笔记应用，返璞归真。
 
-![image](https://github.com/user-attachments/assets/eeede0aa-aaae-429e-bfb3-718ec69cd53d)
+![image](https://github.com/user-attachments/assets/bdc044d3-2520-417f-86a7-05bc41972561)
 
+
+- 现已支持 SVG 渲染
+
+![image](https://github.com/user-attachments/assets/2497f797-d36f-4b9c-8453-34372a47b094)
 
 ## 功能
 
