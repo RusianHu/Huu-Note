@@ -117,7 +117,20 @@ class ConfigManager:
     def get_file_mapping(self, local_path):
         """获取本地文件对应的云端路径"""
         mappings = self.get_sync_setting("file_mapping", {})
-        return mappings.get(local_path)
+        
+        # 规范化输入路径
+        norm_path = os.path.normpath(local_path)
+        
+        # 直接匹配
+        if norm_path in mappings:
+            return mappings[norm_path]
+            
+        # 尝试规范化所有键进行匹配
+        for path, cloud_path in mappings.items():
+            if os.path.normpath(path) == norm_path:
+                return cloud_path
+                
+        return None
     
     def set_file_mapping(self, local_path, cloud_path):
         """设置本地文件与云端文件的映射关系"""

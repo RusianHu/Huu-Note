@@ -142,6 +142,8 @@ class MainWindow(QMainWindow):
         # 创建文件浏览器
         default_notes_path = self.settings.get("notes_directory")
         self.file_explorer = FileExplorer(default_notes_path)
+        # 设置同步管理器
+        self.file_explorer.sync_manager = self.sync_manager
         self.file_explorer_dock.setWidget(self.file_explorer)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_explorer_dock)
         

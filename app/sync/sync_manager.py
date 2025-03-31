@@ -130,15 +130,22 @@ class SyncManager(QObject):
         if not self.is_sync_enabled():
             return False, "同步未启用", None
             
+        # 规范化路径，确保路径格式一致
+        local_path = os.path.normpath(local_path)
+            
         # 获取云端路径
         cloud_path = self.config.get_file_mapping(local_path)
         if not cloud_path:
             # 如果没有映射，使用相对路径作为云端路径
             base_dir = self.config.settings.get("notes_directory")
+            base_dir = os.path.normpath(base_dir)
+            
             if local_path.startswith(base_dir):
                 cloud_path = os.path.relpath(local_path, base_dir)
+                print(f"创建新映射: {local_path} -> {cloud_path}")
             else:
                 cloud_path = os.path.basename(local_path)
+                print(f"使用文件名作为云端路径: {local_path} -> {cloud_path}")
                 
         # 如果未提供内容，则从文件读取
         if content is None:

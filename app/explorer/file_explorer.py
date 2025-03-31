@@ -12,6 +12,7 @@ class FileExplorer(QWidget):
     def __init__(self, root_path):
         super().__init__()
         self.root_path = root_path
+        self.sync_manager = None  # 初始化为None，稍后由MainWindow设置
         self.setup_ui()
         self.setup_connections()
     
@@ -116,6 +117,9 @@ class FileExplorer(QWidget):
         path = self.model.filePath(index)
         is_file = os.path.isfile(path)
         
+        # 检查是否启用了云端同步
+        sync_enabled = self.sync_manager and self.sync_manager.is_sync_enabled()
+        
         menu = QMenu()
         
         # 导入笔记选项
@@ -137,9 +141,21 @@ class FileExplorer(QWidget):
         rename_action.triggered.connect(lambda: self.rename_item(index))
         menu.addAction(rename_action)
         
+        # 如果启用了云端同步，添加"同时重命名云端"选项
+        if sync_enabled:
+            rename_cloud_action = QAction("同时重命名云端", self)
+            rename_cloud_action.triggered.connect(lambda: self.rename_item_with_cloud(index))
+            menu.addAction(rename_cloud_action)
+        
         delete_action = QAction("删除", self)
         delete_action.triggered.connect(lambda: self.delete_item(index))
         menu.addAction(delete_action)
+        
+        # 如果启用了云端同步，添加"同时删除云端"选项
+        if sync_enabled:
+            delete_cloud_action = QAction("同时删除云端", self)
+            delete_cloud_action.triggered.connect(lambda: self.delete_item_with_cloud(index))
+            menu.addAction(delete_cloud_action)
         
         # 文件夹特有选项
         if not is_file:
@@ -205,6 +221,75 @@ class FileExplorer(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"重命名失败: {str(e)}")
     
+    def rename_item_with_cloud(self, index):
+        """重命名文件并同步到云端"""
+        if not self.sync_manager or not self.sync_manager.is_sync_enabled():
+            QMessageBox.warning(self, "同步未启用", "云端同步功能未启用，无法同步重命名。")
+            return
+            
+        old_path = self.model.filePath(index)
+        old_name = os.path.basename(old_path)
+        
+        new_name, ok = QInputDialog.getText(
+            self, "重命名（云端同步）", "请输入新名称:", text=old_name)
+            
+        if ok and new_name:
+            if os.path.isfile(old_path) and not new_name.endswith('.md'):
+                new_name += '.md'
+                
+            new_path = os.path.join(os.path.dirname(old_path), new_name)
+            
+            try:
+                # 获取云端路径
+                old_cloud_path = self.sync_manager.config.get_file_mapping(old_path)
+                
+                if not old_cloud_path:
+                    # 尝试规范化路径后再次查找
+                    norm_path = os.path.normpath(old_path)
+                    old_cloud_path = self.sync_manager.config.get_file_mapping(norm_path)
+                    
+                    if not old_cloud_path:
+                        QMessageBox.warning(self, "未找到云端映射", 
+                                          f"未找到文件 {old_name} 的云端映射，将只进行本地重命名。\n路径: {old_path}")
+                        os.rename(old_path, new_path)
+                        self.refresh()
+                        return
+                
+                # 计算新的云端路径
+                new_cloud_path = os.path.join(os.path.dirname(old_cloud_path), new_name)
+                
+                # 先在本地重命名
+                os.rename(old_path, new_path)
+                
+                # 更新映射关系
+                self.sync_manager.config.remove_file_mapping(old_path)
+                self.sync_manager.config.set_file_mapping(new_path, new_cloud_path)
+                
+                # 如果是文件，上传新内容
+                if os.path.isfile(new_path):
+                    with open(new_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    success, message, _ = self.sync_manager.upload_note(new_path, content)
+                    
+                    # 删除旧文件
+                    self.sync_manager.delete_note(old_cloud_path)
+                    
+                    if not success:
+                        QMessageBox.warning(self, "云端同步失败", 
+                                          f"文件已在本地重命名，但云端同步失败: {message}")
+                else:
+                    # 对于文件夹，需要更新所有子文件的映射
+                    # 这里简化处理，只提示用户需要手动同步
+                    QMessageBox.information(self, "文件夹重命名", 
+                                         "文件夹已在本地重命名，请使用同步功能更新云端文件夹结构。")
+                
+                self.refresh()
+                self.statusBar().showMessage(f"已重命名 {old_name} 为 {new_name}（本地和云端）", 3000)
+                
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"重命名失败: {str(e)}")
+
+    
     def delete_item(self, index):
         path = self.model.filePath(index)
         name = os.path.basename(path)
@@ -220,6 +305,62 @@ class FileExplorer(QWidget):
                     os.remove(path)
                 else:
                     shutil.rmtree(path)
+                self.refresh()
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
+    
+    def delete_item_with_cloud(self, index):
+        """删除文件并同步到云端"""
+        if not self.sync_manager or not self.sync_manager.is_sync_enabled():
+            QMessageBox.warning(self, "同步未启用", "云端同步功能未启用，无法同步删除。")
+            return
+            
+        path = self.model.filePath(index)
+        name = os.path.basename(path)
+        
+        result = QMessageBox.question(
+            self, "确认删除（云端同步）", 
+            f"确定要删除 '{name}' 吗？此操作将同时删除本地和云端文件。",
+            QMessageBox.Yes | QMessageBox.No)
+            
+        if result == QMessageBox.Yes:
+            try:
+                # 获取云端路径
+                cloud_path = self.sync_manager.config.get_file_mapping(path)
+                
+                if not cloud_path:
+                    # 尝试规范化路径后再次查找
+                    norm_path = os.path.normpath(path)
+                    cloud_path = self.sync_manager.config.get_file_mapping(norm_path)
+                    
+                    if not cloud_path:
+                        # 输出更详细的调试信息
+                        QMessageBox.warning(self, "未找到云端映射", 
+                                          f"未找到文件 {name} 的云端映射，将只进行本地删除。\n路径: {path}")
+                        if os.path.isfile(path):
+                            os.remove(path)
+                        else:
+                            shutil.rmtree(path)
+                        self.refresh()
+                        return
+                
+                # 先删除本地文件
+                if os.path.isfile(path):
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
+                
+                # 删除云端文件
+                success, message = self.sync_manager.delete_note(cloud_path)
+                
+                if not success:
+                    QMessageBox.warning(self, "云端删除失败", 
+                                      f"文件已在本地删除，但云端删除失败: {message}")
+                else:
+                    self.statusBar().showMessage(f"已删除 {name}（本地和云端）", 3000)
+                
+                self.refresh()
+                
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
     
