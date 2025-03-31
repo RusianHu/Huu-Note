@@ -481,5 +481,5 @@ class MarkdownEditor(QWidget):
         old_splitter.deleteLater()
         
     def get_layout_orientation(self):
-        """获取当前布局方向"""
+        """获取布局方向"""
         return self.current_layout
