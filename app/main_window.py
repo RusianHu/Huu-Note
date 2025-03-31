@@ -538,13 +538,17 @@ class MainWindow(QMainWindow):
                 self.load_file(file_path)
     
     def show_about(self):
+        about_text = (
+            "<h3>老司机笔记应用程序 v1.0</h3>"
+            "<p>现已支持云端同步功能</p>"
+            "<p><a href='https://github.com/RusianHu/Huu-Note'>"
+            "<img src='qrc:/icons/github.svg' width='16' height='16' style='vertical-align:middle'>"
+            " GitHub项目主页</a></p>"
+        )
         QMessageBox.about(
             self, 
             "关于老司机笔记", 
-            "老司机笔记应用程序 v1.0\n"
-            "一个简单易用的Markdown笔记应用\n"
-            "支持笔记管理、Markdown编辑和全文搜索\n"
-            "现已支持云端同步功能"
+            about_text
         )
     
     def closeEvent(self, event):
