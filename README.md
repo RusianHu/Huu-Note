@@ -23,6 +23,12 @@
 
 ## 安装指南
 
+## 下载
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/RusianHu/Huu-Note?style=for-the-badge)](https://github.com/RusianHu/Huu-Note/releases/latest)
+
+或访问[发布页面](https://github.com/RusianHu/Huu-Note/releases)获取所有版本
+
 ### 从源码运行
 
 1. 确保已安装Python 3.8+
