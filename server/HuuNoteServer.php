@@ -3,7 +3,7 @@
  * HuuNoteServer.php
  * 
  * Huu Note 笔记同步服务端
- * 提供笔记的上传、下载、删除、搜索、同步等功能
+ * 提供笔记的上传、下载、删除、搜索、同步、重命名等功能
  */
 
 // 设置时区
@@ -11,7 +11,7 @@ date_default_timezone_set('Asia/Shanghai');
 
 // 允许跨域请求
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -114,6 +114,15 @@ class HuuNoteServer {
                 
             case 'search':
                 $this->searchNotes();
+                break;
+                
+            // 添加重命名端点
+            case 'rename':
+                if ($method === 'PUT') {
+                    $this->renameItem();
+                } else {
+                    $this->sendResponse(['error' => '无效的请求方法，重命名功能需要使用PUT'], 405);
+                }
                 break;
                 
             default:
@@ -356,6 +365,71 @@ class HuuNoteServer {
         }
         
         return rmdir($dir);
+    }
+    
+    /**
+     * 重命名笔记或文件夹
+     * 支持重命名单个笔记文件或整个文件夹
+     */
+    private function renameItem() {
+        $apiKey = $this->getApiKeyFromRequest();
+        $userPath = $this->getUserStoragePath($apiKey);
+        
+        // 获取请求内容
+        $requestData = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($requestData['old_path']) || !isset($requestData['new_path'])) {
+            $this->sendResponse(['error' => '缺少必要参数，需要提供old_path和new_path'], 400);
+            return;
+        }
+        
+        $oldPath = $requestData['old_path'];
+        $newPath = $requestData['new_path'];
+        
+        // 安全检查：确保路径不包含 ..
+        if (strpos($oldPath, '..') !== false || strpos($newPath, '..') !== false) {
+            $this->sendResponse(['error' => '无效的路径'], 400);
+            return;
+        }
+        
+        // 构建完整路径
+        $oldFullPath = $userPath . '/' . $oldPath;
+        $newFullPath = $userPath . '/' . $newPath;
+        
+        // 检查源是否存在
+        if (!file_exists($oldFullPath)) {
+            $this->sendResponse(['error' => '源文件或文件夹不存在'], 404);
+            return;
+        }
+        
+        // 检查目标是否已存在
+        if (file_exists($newFullPath)) {
+            $this->sendResponse(['error' => '目标路径已存在，不能覆盖'], 409);
+            return;
+        }
+        
+        // 确保新文件的目录存在
+        $newDirectory = dirname($newFullPath);
+        if (!file_exists($newDirectory)) {
+            if (!mkdir($newDirectory, 0755, true)) {
+                $this->sendResponse(['error' => '无法创建目标目录'], 500);
+                return;
+            }
+        }
+        
+        // 执行重命名
+        if (rename($oldFullPath, $newFullPath)) {
+            $isDir = is_dir($newFullPath);
+            $this->sendResponse([
+                'success' => true,
+                'old_path' => $oldPath,
+                'new_path' => $newPath,
+                'is_dir' => $isDir,
+                'last_modified' => filemtime($newFullPath)
+            ]);
+        } else {
+            $this->sendResponse(['error' => '重命名失败'], 500);
+        }
     }
     
     /**
