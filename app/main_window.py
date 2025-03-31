@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         self.load_editor_layout_setting()
         
     def setup_ui(self):
-        self.setWindowTitle("老司机中文笔记")
+        self.setWindowTitle("老司机笔记")
         self.setMinimumSize(1000, 700)
         
         # 主部件
