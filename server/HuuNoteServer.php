@@ -291,7 +291,7 @@ class HuuNoteServer {
     }
     
     /**
-     * 删除笔记
+     * 删除笔记或文件夹
      * @param string $notePath 笔记路径
      */
     private function deleteNote($notePath) {
@@ -308,16 +308,54 @@ class HuuNoteServer {
         $fullPath = $userPath . '/' . $notePath;
         
         if (!file_exists($fullPath)) {
-            $this->sendResponse(['error' => '笔记不存在'], 404);
+            $this->sendResponse(['error' => '笔记或文件夹不存在'], 404);
             return;
         }
         
-        // 删除文件
-        if (unlink($fullPath)) {
-            $this->sendResponse(['success' => true, 'path' => $notePath]);
+        // 判断是文件还是目录
+        if (is_dir($fullPath)) {
+            // 删除目录及其内容
+            if ($this->deleteDirectory($fullPath)) {
+                $this->sendResponse(['success' => true, 'path' => $notePath, 'is_dir' => true]);
+            } else {
+                $this->sendResponse(['error' => '删除文件夹失败'], 500);
+            }
         } else {
-            $this->sendResponse(['error' => '删除笔记失败'], 500);
+            // 删除文件
+            if (unlink($fullPath)) {
+                $this->sendResponse(['success' => true, 'path' => $notePath, 'is_dir' => false]);
+            } else {
+                $this->sendResponse(['error' => '删除笔记失败'], 500);
+            }
         }
+    }
+    
+    /**
+     * 递归删除目录及其内容
+     * @param string $dir 目录路径
+     * @return bool 是否成功删除
+     */
+    private function deleteDirectory($dir) {
+        if (!file_exists($dir)) {
+            return true;
+        }
+        
+        if (!is_dir($dir)) {
+            return unlink($dir);
+        }
+        
+        // 遍历目录内容
+        foreach (scandir($dir) as $item) {
+            if ($item == '.' || $item == '..') {
+                continue;
+            }
+            
+            if (!$this->deleteDirectory($dir . DIRECTORY_SEPARATOR . $item)) {
+                return false;
+            }
+        }
+        
+        return rmdir($dir);
     }
     
     /**

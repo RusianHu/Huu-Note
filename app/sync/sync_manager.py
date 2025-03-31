@@ -211,7 +211,7 @@ class SyncManager(QObject):
             
     def delete_note(self, cloud_path):
         """
-        从服务器删除笔记
+        从服务器删除笔记或文件夹
         
         Args:
             cloud_path: 云端文件路径
@@ -230,7 +230,7 @@ class SyncManager(QObject):
             if result.get("success"):
                 # 删除所有对应的映射
                 for local, cloud in list(self.config.config.get("file_mapping", {}).items()):
-                    if cloud == cloud_path:
+                    if cloud == cloud_path or cloud.startswith(cloud_path + '/'):
                         self.config.remove_file_mapping(local)
                 return True, "删除成功"
             else:
@@ -254,6 +254,31 @@ class SyncManager(QObject):
         if success:
             result = response.json()
             notes = result.get("notes", [])
+            
+            # 处理文件夹信息
+            # 从文件路径中提取目录结构
+            folders = set()
+            for note in notes:
+                path = note["path"]
+                parts = path.split('/')
+                # 添加所有父目录
+                current_path = ""
+                for part in parts[:-1]:  # 排除文件名
+                    if not part:  # 跳过空部分
+                        continue
+                    current_path = current_path + "/" + part if current_path else part
+                    folders.add(current_path)
+            
+            # 将文件夹添加到结果中
+            for folder in folders:
+                notes.append({
+                    "path": folder,
+                    "filename": os.path.basename(folder),
+                    "last_modified": 0,
+                    "size": 0,
+                    "is_dir": True
+                })
+                
             return True, "获取成功", notes
         else:
             return False, response, None

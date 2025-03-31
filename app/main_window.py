@@ -12,6 +12,7 @@ from app.search.search_engine import SearchDialog
 from app.utils.file_operations import save_file, load_file
 from app.utils.settings import Settings
 from app.sync.sync_manager import SyncManager
+from app.sync.cloud_manager_dialog import CloudManagerDialog
 
 class SyncSettingsDialog(QDialog):
     """同步设置对话框"""
@@ -266,6 +267,12 @@ class MainWindow(QMainWindow):
         download_action = QAction("从云端下载笔记(&D)", self)
         download_action.triggered.connect(self.download_from_cloud)
         sync_menu.addAction(download_action)
+
+        sync_menu.addSeparator()
+
+        cloud_manager_action = QAction("云端笔记管理(&M)", self)
+        cloud_manager_action.triggered.connect(self.show_cloud_manager)
+        sync_menu.addAction(cloud_manager_action)
         
         # 帮助菜单
         help_menu = self.menuBar().addMenu("帮助(&H)")
@@ -684,7 +691,18 @@ class MainWindow(QMainWindow):
                             QMessageBox.warning(self, "保存失败", f"无法保存文件: {save_path}")
                     else:
                         QMessageBox.warning(self, "下载失败", message)
-                        
+
+    def show_cloud_manager(self):
+        """显示云端笔记管理对话框"""
+        if not self.sync_manager.is_sync_enabled():
+            QMessageBox.warning(self, "同步未启用", "请先在同步设置中启用同步功能")
+            self.show_sync_settings()
+            return
+            
+        # 创建并显示云端管理对话框
+        dialog = CloudManagerDialog(self.sync_manager, self)
+        dialog.exec_()
+
     def on_sync_started(self):
         """同步开始时的处理"""
         self.statusBar().showMessage("正在同步...")
