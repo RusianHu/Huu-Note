@@ -23,7 +23,7 @@
 
 ## 安装指南
 
-## 下载
+### 下载
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/RusianHu/Huu-Note?style=for-the-badge)](https://github.com/RusianHu/Huu-Note/releases/latest)
 
